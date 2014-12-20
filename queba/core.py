@@ -80,10 +80,14 @@ class AccountNumberValidator(BookNumberValidator):
         if len(acctno) < 10 or len(acctno) > 12 or not self._isnumeric(acctno):
            return (value, self.error_message)
         
-        buCode = int(acctno[:2])
-        if buCode < 32 or buCode > 38:
+        # validate book part of account number
+        result = super(AccountNumberValidator, self).__call__(acctno[:6])
+        if result[1] is not None:
             return (value, self.error_message)
-
+        
+        # validate account validator digit which is Y in 'xx/xx/xx/xxxY-xx'
+        # gotten as modulo of sum of positional weight of account number digits
+        # excluding 'Y-xx'
         acct = acctno[:10]
         acct_digit_pos_weights = [
             int(acct[i]) * (i+1) 
