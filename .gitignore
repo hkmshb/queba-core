@@ -1,0 +1,6 @@
+*.py[co]
+queba-core.*
+
+
+__pycache__
+[_.]ignore
