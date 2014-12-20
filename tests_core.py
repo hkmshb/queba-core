@@ -88,7 +88,7 @@ class BookNumberValidatorTest(unittest.TestCase):
     @unpack
     @data(['32/06/01/32'], ['32060132'],    # too many
           ['31/06/01'],    ['310601'],      # first-two-digits < 32
-          ['39/06/01'],    ['390601'],      # last-two-digits > 38
+          ['39/06/01'],    ['390601'],      # first-two-digits > 38
           ['32/06/AB'],    ['3206AB'],)     # contains xters besides separator=/
     def test_validate_fails_for_invalid_book_number_in_diff_format(self, value):
         r = core.BookNumberValidator()(value)
@@ -109,7 +109,61 @@ class BookNumberValidatorTest(unittest.TestCase):
     def test_no_reformat_of_valid_book_number_if_format_is_false(self, value):
         r = core.BookNumberValidator(format=False)(value)
         self.assertEqual(value, r[0])
+        self.assertIsNone(r[1])
+
+    @unpack
+    @data(['310601'], ['390601'], ['470601'], ['520601'], ['990601'])
+    def test_fails_for_book_number_with_bad_first_two_digits(self, value):
+        # first two digits MUST be: x where {31 < x < 39}
+        r = core.BookNumberValidator()(value)
+        self.assertEqual(value, r[0])   # returns value in r
+        self.assertIsNotNone(r[1])      # failing validation
+
+
+@ddt
+class AccountNumberValidatorTest(unittest.TestCase):
+    
+    @unpack
+    @data(['32/06/01/5726-01'], ['32-06-01-5726-01'], ['32-06/01/5726-01'],
+          ['32/06-01-5726-01'], ['3206015726-01'],    ['3206015726'],
+          ['32/06/01/5726'],    ['32-06-01-5726'],    ['32-06/01/5726'],
+          ['32/06-01-5726'],)
+    def test_validate_for_valid_acct_number_in_diff_format(self, value):
+        r = core.AccountNumberValidator()(value)
+        self.assertIsNone(r[1])     # passing validation
+    
+    @unpack
+    @data(['32/06/01/57263-01'], ['32060157263-01'],    # too many digits
+          ['31/06/01-5726-01'],  ['49-06/01/5726-01'],  # invalid first two digits
+          ['32:06/01/5726'],     ['32/06/01/X726'],     # invalid sep and xter
+          ['32/06/01/5721-01'],  ['3206015727'],)       # invalid acct-no validator digit
+    def test_validate_fails_for_invalid_account_number_in_diff_format(self, value):
+        r = core.AccountNumberValidator()(value)
+        self.assertEqual(value, r[0])   # returns value in r
+        self.assertIsNotNone(r[1])      # failing validation
+
+    @unpack
+    @data(['32/06/01/5726-01', '32/06/01/5726-01'], 
+          ['32-06-01-5726-01', '32/06/01/5726-01'], 
+          ['32-06/01/5726-01', '32/06/01/5726-01'],
+          ['3206015726-01',    '32/06/01/5726-01'],    
+          ['3206015726',       '32/06/01/5726'],
+          ['32-06-01-5726',    '32/06/01/5726'],
+          ['32-06/01/5726',    '32/06/01/5726'],)
+    def test_reformats_valid_acct_number_in_diff_format(self, value, expected):
+        r = core.AccountNumberValidator()(value)
+        self.assertEqual(expected, r[0])
         self.assertIsNone(r[1])             # passing validation
+
+    @unpack
+    @data(['32/06/01/5726-01'], ['32-06-01-5726-01'], ['32-06/01/5726-01'],
+          ['32/06-01-5726-01'], ['3206015726-01'],    ['3206015726'],
+          ['32/06/01/5726'],    ['32-06-01-5726'],    ['32-06/01/5726'],
+          ['32/06-01-5726'],)    
+    def test_no_reformat_of_valid_account_number_if_format_is_false(self, value):
+        r = core.AccountNumberValidator(format=False)(value)
+        self.assertEqual(value, r[0])
+        self.assertIsNone(r[1])             
 
 
 
